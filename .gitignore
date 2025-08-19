@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.DS_Store
+.tmp/
+.vite/
+*.log
+coverage/
+.env
+.env.local
+assets/fonts/*.woff2
+!assets/fonts/.keep
+*.tsbuildinfo
+
+public/icons/*.png
+!public/icons/.keep

@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Sonetica — поэтический кабинет</title>
 <meta name="description" content="Sonetica — офлайн-инструмент для поэтов: рифмы, ритм, слоги, строфы. Полностью локально, без серверов." />
+<link rel="stylesheet" href="/assets/fonts/fonts.css" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=STIX+Two+Text:ital,wght@0,400;0,700;1,400;1,700&display=swap&subset=cyrillic" />
 <style>
   :root{
     --paper:#f7f2e8;
@@ -25,7 +28,7 @@
     margin:0;
     background:var(--paper);
     color:var(--ink);
-    font-family:"EB Garamond","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-family:var(--app-font,"EB Garamond","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif);
     display:flex; flex-direction:column;
   }
   header{
@@ -52,7 +55,7 @@
   .kbd{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; background:#fff; border:1px solid #e0d5bf; border-radius:4px; padding:1px 4px}
   main{flex:1; min-height:0; padding:14px}
   .layout{display:grid; grid-template-columns:minmax(300px,1.1fr) minmax(260px,.9fr); gap:14px; height:100%}
-  @media (max-width:1100px){ .layout{grid-template-columns:1fr; height:auto} }
+  @media (max-width:900px){ .layout{grid-template-columns:1fr; height:auto} .side{display:none} }
   .panel{
     background:var(--paper2); border:1px solid var(--sep); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); display:flex; flex-direction:column;
   }
@@ -268,6 +271,25 @@ const $rhymeChips = $('#rhymeChips');
 const $meterInfo = $('#meterInfo');
 const $stanzaInfo = $('#stanzaInfo');
 const $dictInfo = $('#dictInfo');
+
+/* ---------- Responsive layout ---------- */
+function responsiveLayout(){
+  const mq = window.matchMedia('(max-width:900px)');
+  const side = document.querySelector('.side');
+  const main = document.querySelector('.layout .panel');
+  const moveList = ['meterInfo','analysis','stanzaInfo','suggest'].map(id=>document.getElementById(id));
+  function apply(){
+    if(mq.matches){
+      moveList.forEach(el=> el && main.appendChild(el));
+      side && (side.style.display='none');
+    }else{
+      side && (side.style.display='');
+      moveList.forEach(el=> el && side.appendChild(el));
+    }
+  }
+  mq.addEventListener('change', apply);
+  apply();
+}
 
 function loadSettings(){
   try{ const s = JSON.parse(localStorage.getItem(LS.settings)||'{}'); Object.assign(S,s); }catch{}
@@ -755,25 +777,6 @@ function enableLight(){
   localStorage.setItem(LS.theme,'light');
 }
 
-/* ---------- PWA (single-file SW via Blob) ---------- */
-async function registerSW(){
-  if (!('serviceWorker' in navigator)) return;
-  const swCode = `
-    self.addEventListener('install', e=>{
-      e.waitUntil((async()=>{ const cache = await caches.open('sonetica-cache-v1'); await cache.addAll(['./']); self.skipWaiting(); })());
-    });
-    self.addEventListener('activate', e=> e.waitUntil(self.clients.claim()));
-    self.addEventListener('fetch', e=>{
-      const url = new URL(e.request.url);
-      if (url.origin===location.origin){ e.respondWith(caches.match(e.request).then(r=> r || fetch(e.request))); }
-    });
-  `;
-  const blob = new Blob([swCode], {type:'text/javascript'});
-  const url = URL.createObjectURL(blob);
-  try{ await navigator.serviceWorker.register(url); }catch{}
-  setTimeout(()=>URL.revokeObjectURL(url), 1000);
-}
-
 /* ---------- Autosave ---------- */
 let autosaveTimer=null;
 function resetAutosave(){
@@ -816,7 +819,6 @@ $poem.addEventListener('keydown', (e)=>{
   loadOverrides();
   seedMiniLex();
   loadTheme();
-  registerSW();
   resetAutosave();
 
   // Hook settings inputs to live update
@@ -837,8 +839,10 @@ $poem.addEventListener('keydown', (e)=>{
   if (!localStorage.getItem(LS.draft)) $poem.value = demo;
 
   analyzeDebounced();
+  responsiveLayout();
 })();
 
 </script>
+<script type="module" src="/src/main.ts"></script>
 </body>
 </html>
