@@ -1,0 +1,22 @@
+{
+  "name": "sonetica",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
+    "fetch:fonts": "node scripts/fetch-fonts.mjs"
+  },
+  "devDependencies": {
+    "@tsconfig/node18": "^18.2.4",
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
