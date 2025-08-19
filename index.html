@@ -1,17 +1,848 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sonetica</title>
-  <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=STIX+Two+Text:ital,wght@0,400;0,700;1,400;1,700&display=swap&subset=cyrillic" />
-  <link rel="manifest" href="/manifest.webmanifest" />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sonetica — поэтический кабинет</title>
+<meta name="description" content="Sonetica — офлайн-инструмент для поэтов: рифмы, ритм, слоги, строфы. Полностью локально, без серверов." />
+<link rel="stylesheet" href="/assets/fonts/fonts.css" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=STIX+Two+Text:ital,wght@0,400;0,700;1,400;1,700&display=swap&subset=cyrillic" />
+<style>
+  :root{
+    --paper:#f7f2e8;
+    --paper2:#fffaf1;
+    --ink:#141210;
+    --ink2:#463d31;
+    --gold:#b79a4b;
+    --sep:#e6dcc8;
+    --ok:#2c7a3f;
+    --warn:#b86b1b;
+    --bad:#a23434;
+    --accent:#344b7a;
+    --shadow:0 2px 10px #00000014;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--app-font,"EB Garamond","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif);
+    display:flex; flex-direction:column;
+  }
+  header{
+    background:linear-gradient(#fbf6ea, #f3e9d7);
+    border-bottom:2px solid var(--gold);
+    padding:12px 16px;
+    display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center;
+  }
+  @media (max-width:900px){ header{grid-template-columns:1fr; gap:8px} }
+  .brand{display:flex; align-items:center; gap:12px}
+  .logo{
+    font-weight:700; font-variant:small-caps; letter-spacing:.06em; font-size:20px;
+    border:2px solid var(--accent); border-radius:8px; padding:2px 8px; color:var(--accent); background:#fff;
+  }
+  .subtitle{font-size:12px; color:var(--ink2)}
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+  .btn{
+    border:1px solid var(--gold); background:#fff; padding:7px 10px; border-radius:7px; cursor:pointer;
+    font-family:inherit; box-shadow:var(--shadow);
+  }
+  .btn:disabled{opacity:.5; cursor:default}
+  .btn.secondary{background:#fff8; border-color:#dccaa1}
+  .btn.ghost{background:transparent}
+  .kbd{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; background:#fff; border:1px solid #e0d5bf; border-radius:4px; padding:1px 4px}
+  main{flex:1; min-height:0; padding:14px}
+  .layout{display:grid; grid-template-columns:minmax(300px,1.1fr) minmax(260px,.9fr); gap:14px; height:100%}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr; height:auto} .side{display:none} }
+  .panel{
+    background:var(--paper2); border:1px solid var(--sep); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); display:flex; flex-direction:column;
+  }
+  .panel>h2{
+    margin:0; padding:12px 14px; font-size:16px; font-variant:small-caps; letter-spacing:.04em; color:#6e5e46;
+    border-bottom:1px solid var(--sep); background:linear-gradient(#fff,#faf3e6);
+  }
+  .editor-wrap{flex:1; display:flex; min-height:260px}
+  textarea#poem{
+    width:100%; border:0; outline:none; background:transparent; padding:16px;
+    font-size:18px; line-height:1.6; white-space:pre; resize:none;
+  }
+  .statusbar{
+    display:flex; gap:10px; align-items:center; border-top:1px solid var(--sep);
+    background:#fffef9; color:#6a5c49; font-size:12px; padding:8px 12px; flex-wrap:wrap;
+  }
+  .switch{display:inline-flex; align-items:center; gap:6px}
+  .switch input{accent-color:var(--accent)}
+  .side{
+    display:grid; grid-template-rows:auto minmax(160px,1fr) auto auto; min-height:0;
+  }
+  .analysis{padding:10px 12px; overflow:auto}
+  .line{padding:8px 0; border-bottom:1px dashed #eadfca}
+  .lnum{color:#8b7b64; width:2ch; display:inline-block; text-align:right; margin-right:8px}
+  .ltext{white-space:pre-wrap}
+  mark.tail{background:linear-gradient(transparent 50%, rgba(183,154,75,.28) 50%)}
+  .tags{display:flex; gap:6px; flex-wrap:wrap; padding-top:6px}
+  .tag{font-size:12px; border:1px solid #d9c9a8; border-radius:999px; padding:2px 8px; background:#fff; color:#574b3b}
+  .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+  .meterbox,.stanzaBox{padding:10px 12px; border-bottom:1px solid var(--sep); background:#fffefb}
+  .small{font-size:12px; color:#6a5c49}
+  .suggest{padding:10px 12px; border-top:1px solid var(--sep); background:#fffef9; max-height:35vh; overflow:auto}
+  .suggest h3{margin:0 0 6px 0; font-size:13px; color:#6a5c49}
+  .chips{display:flex; gap:6px; flex-wrap:wrap}
+  .chip{display:inline-block; padding:5px 8px; border:1px solid #d9c9a8; border-radius:7px; background:#fff; cursor:pointer}
+  .foot{padding:8px 12px; border-top:1px solid var(--sep); font-size:12px; color:#6a5c49; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap}
+  dialog{border:1px solid var(--sep); border-radius:12px; padding:0; box-shadow:0 10px 40px #00000030; width:min(680px,calc(100vw - 20px))}
+  dialog::backdrop{background:rgba(0,0,0,.25)}
+  .modal-head{padding:12px 14px; border-bottom:1px solid var(--sep); background:#fffaf1; display:flex; justify-content:space-between; align-items:center}
+  .modal-body{padding:14px; max-height:60vh; overflow:auto}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  @media (max-width:720px){ .grid2{grid-template-columns:1fr} }
+  .fieldset{border:1px solid var(--sep); border-radius:8px; padding:10px}
+  .fieldset legend{padding:0 6px; color:#6a5c49}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0}
+  .row .hint{font-size:12px; color:#7e6d56}
+  .select, .input{border:1px solid var(--sep); background:#fff; padding:7px 9px; border-radius:7px; font-family:inherit}
+  .kbd-tip{font-size:12px; color:#6a5c49}
+  .badge{display:inline-block; padding:1px 6px; border-radius:999px; background:#ede3cf; border:1px solid #dccaa9; font-size:11px}
+  .innerRhyme{background:linear-gradient(transparent 45%, rgba(52,75,122,.18) 45%)}
+  .clickable{cursor:pointer}
+</style>
 </head>
 <body>
-  <label for="fontSelect">Шрифт:</label>
-  <select id="fontSelect"></select>
-  <textarea id="poem" placeholder="Начните писать..." rows="10" style="width:100%;"></textarea>
-  <script type="module" src="/src/main.ts"></script>
+<header>
+  <div class="brand">
+    <div class="logo">Sonetica</div>
+    <div class="subtitle">Rhyme · Meter · Syllables · Stanzas — all local</div>
+  </div>
+  <div class="toolbar">
+    <button class="btn" id="btnSave">Save draft</button>
+    <button class="btn" id="btnLoad">Open draft</button>
+    <button class="btn" id="btnExport">Export</button>
+    <button class="btn" id="btnImport">Import</button>
+  </div>
+  <div class="toolbar">
+    <button class="btn secondary" id="btnDict">Load demo dictionary</button>
+    <button class="btn" id="btnSettings">Settings</button>
+    <button class="btn ghost" id="btnTheme">Theme</button>
+  </div>
+</header>
+
+<main>
+  <div class="layout">
+    <section class="panel">
+      <h2>Тетрадь</h2>
+      <div class="editor-wrap">
+        <textarea id="poem" placeholder="Пиши стихи здесь. Ударение можно ставить апострофом сразу после ударной гласной (звони'т), либо акутом (зво́нит). Пустая строка — граница строфы."></textarea>
+      </div>
+      <div class="statusbar small" id="status">
+        <span><span class="badge">Tip</span> Щёлкни по слову в анализе — можно вручную задать ударение.</span>
+        <span class="kbd-tip">⌘/Ctrl+S — сохранить · ⌘/Ctrl+E — экспорт</span>
+      </div>
+    </section>
+
+    <section class="panel side">
+      <div class="meterbox small" id="meterInfo">Метр: авто-распознавание. Рифма: от ударной гласной (фонемный хвост). «Ё» учитывается.</div>
+      <div class="analysis" id="analysis"></div>
+      <div class="stanzaBox small" id="stanzaInfo">Строфы: ручные (пустая строка) + авто-подсказки схем рифмовки.</div>
+      <div class="suggest" id="suggest">
+        <h3>Подбор рифм к последнему слову строки</h3>
+        <div class="chips" id="rhymeChips"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="foot">
+  <div>Локально · Без серверов · PWA-ready</div>
+  <div>v0.9 (single-file)</div>
+</div>
+
+<!-- Settings modal -->
+<dialog id="settings">
+  <div class="modal-head">
+    <strong>Settings</strong>
+    <button class="btn" id="closeSettings">Close</button>
+  </div>
+  <div class="modal-body">
+    <div class="grid2">
+      <fieldset class="fieldset">
+        <legend>Features</legend>
+        <div class="row"><label class="switch"><input type="checkbox" id="optShowRhyme" checked> Подсветка рифмы</label></div>
+        <div class="row"><label class="switch"><input type="checkbox" id="optShowMeter" checked> Определение метра</label></div>
+        <div class="row"><label class="switch"><input type="checkbox" id="optShowSyll" checked> Подсчёт слогов</label></div>
+        <div class="row"><label class="switch"><input type="checkbox" id="optAutoStanza" checked> Авто-строфы (подсказки)</label></div>
+        <div class="row"><label class="switch"><input type="checkbox" id="optInnerRhymes"> Внутренние рифмы (многосложные)</label></div>
+        <div class="row"><label class="switch"><input type="checkbox" id="optEofication" checked> «Ё» строгая (е→ё по контексту)</label></div>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend>Rhyme & Meter</legend>
+        <div class="row">
+          <label>Строгость рифмы</label>
+          <select class="select" id="optRhymeMode">
+            <option value="exact">точная (фонемная)</option>
+            <option value="assonance">ассонанс (гласные)</option>
+            <option value="consonance">консонанс (согласные)</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>Толерантность метра (ошибок/строку)</label>
+          <select class="select" id="optTol">
+            <option>0</option><option selected>1</option><option>2</option><option>3</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>Min хвост для рифмы (фонем)</label>
+          <select class="select" id="optMinTail">
+            <option>2</option><option selected>3</option><option>4</option><option>5</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>Вариант анакрузы</label>
+          <select class="select" id="optAnacrusis">
+            <option value="0">запретить</option>
+            <option value="1" selected>доп. до 1 U в начале</option>
+            <option value="2">доп. до 2 U в начале</option>
+          </select>
+        </div>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend>Editor</legend>
+        <div class="row">
+          <label>Размер шрифта редактора</label>
+          <select class="select" id="optFont">
+            <option value="16">16</option>
+            <option value="18" selected>18</option>
+            <option value="20">20</option>
+            <option value="22">22</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>Автосохранение</label>
+          <select class="select" id="optAutosave">
+            <option value="off">выкл</option>
+            <option value="10">каждые 10с</option>
+            <option value="30" selected>30с</option>
+            <option value="60">60с</option>
+          </select>
+        </div>
+        <div class="row"><span class="hint">Overrides ударений сохраняются локально и применяются поверх словаря.</span></div>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend>Data</legend>
+        <div class="row">
+          <span>Словарь: <span id="dictInfo" class="badge">mini</span></span>
+          <button class="btn" id="btnDict2">Load extended (embedded)</button>
+        </div>
+        <div class="row">
+          <span class="hint">В полной версии словари грузятся чанками в IndexedDB. Здесь встроены демо-пакеты.</span>
+        </div>
+      </fieldset>
+    </div>
+  </div>
+</dialog>
+
+<input type="file" id="filePicker" accept=".json,.txt" hidden />
+
+<script>
+/* =========================
+   SONETICA — SINGLE FILE
+   ========================= */
+
+/* ---------- Storage & Settings ---------- */
+const LS = {
+  draft: 'sonetica_draft_v1',
+  overrides: 'sonetica_overrides_v1',
+  settings: 'sonetica_settings_v1',
+  theme: 'sonetica_theme'
+};
+const SETTINGS_DEFAULT = {
+  showRhyme:true, showMeter:true, showSyll:true, autoStanza:true, innerRhymes:false, eofication:true,
+  rhymeMode:'exact', tol:1, minTail:3, anacrusis:1, font:18, autosave:30
+};
+let S = {...SETTINGS_DEFAULT};
+
+const $ = sel => document.querySelector(sel);
+const $poem = $('#poem'), $analysis = $('#analysis');
+const $rhymeChips = $('#rhymeChips');
+const $meterInfo = $('#meterInfo');
+const $stanzaInfo = $('#stanzaInfo');
+const $dictInfo = $('#dictInfo');
+
+/* ---------- Responsive layout ---------- */
+function responsiveLayout(){
+  const mq = window.matchMedia('(max-width:900px)');
+  const side = document.querySelector('.side');
+  const main = document.querySelector('.layout .panel');
+  const moveList = ['meterInfo','analysis','stanzaInfo','suggest'].map(id=>document.getElementById(id));
+  function apply(){
+    if(mq.matches){
+      moveList.forEach(el=> el && main.appendChild(el));
+      side && (side.style.display='none');
+    }else{
+      side && (side.style.display='');
+      moveList.forEach(el=> el && side.appendChild(el));
+    }
+  }
+  mq.addEventListener('change', apply);
+  apply();
+}
+
+function loadSettings(){
+  try{ const s = JSON.parse(localStorage.getItem(LS.settings)||'{}'); Object.assign(S,s); }catch{}
+  applySettingsUI(); applyEditorFont();
+}
+function saveSettings(){ localStorage.setItem(LS.settings, JSON.stringify(S)); }
+
+/* ---------- Demo Dictionaries (embedded) ----------
+   Format:
+   - LEX: array of entries: {w:word, st:stressIndexAmongVowels, f:freq, ph:phonemeTail}
+   For brevity, phoneme tail is computed on the fly here; extended set precomputes it.
+*/
+const VOWELS = "аеёиоуыэюя";
+const VSET = new Set([...VOWELS]);
+const CLEAN = s => s.toLowerCase().replace(/[^\p{Letter}\p{Mark}\-']/gu, " ").replace(/\s+/g," ").trim();
+
+const DEMO_LEX_MIN = [
+  "любовь","кровь","сон","дождь","окно","огонь","порог","дорога","берёза","мороз","весна","луна","земля","лес","река",
+  "вечер","смех","тень","судьба","звезда","поэт","муза","стих","радость","печаль","свобода","вода","слова","мост","простор","покой"
+];
+const DEMO_STRESS = { "любовь":0,"кровь":0,"сон":0,"дождь":0,"окно":1,"огонь":1,"порог":1,"дорога":1,"берёза":1,"мороз":1,"весна":1,"луна":1,"земля":1,"лес":0,"река":1,"вечер":0,"смех":0,"тень":0,"судьба":1,"звезда":1,"поэт":1,"муза":0,"стих":0,"радость":0,"печаль":0,"свобода":2,"вода":1,"слова":1,"мост":0,"простор":1,"покой":1 };
+
+let LEX = new Map(); // word -> {st, f}
+function seedMiniLex(){
+  LEX.clear();
+  for (const w of DEMO_LEX_MIN){
+    LEX.set(w, {st: DEMO_STRESS[w] ?? 0, f: 100});
+  }
+  $dictInfo.textContent = 'mini';
+}
+function seedExtendedLex(){
+  // Lightweight embedded extension (not huge)
+  const EXTRA = [
+    ["люблю",1],["кровавый",1],["огнём",1],["берега",2],["берег",0],["мостом",1],["простом",1],["порогом",1],
+    ["луной",1],["лунами",1],["реки",1],["окна",1],["окне",1],["век",0],["вечный",0],["зов",0],["молчание",1],
+    ["гроза",1],["трава",1],["земной",1],["высокий",1],["глубокий",1],["тихий",0],["гордый",0],["свет",0],["тень",0],
+    ["свободой",2],["слезой",1],["письмо",1],["перо",1],["строка",1],["рифма",0],["ритм",0],
+    ["ночь",0],["день",0],["раны",0],["раны́",1],["песни",0],["экран",1],["стекло",1],["огня",1],
+    ["судьбой",1],["звездой",1],["ветер",0],["камень",0],["вода",1],["виной",1],["дороги",1],["дорогой",2],
+  ];
+  for (const [w,st] of EXTRA){ LEX.set(w, {st, f: 80}); }
+  $dictInfo.textContent = 'extended';
+}
+
+/* ---------- Stress overrides (user) ---------- */
+let OV = {}; // word(lower) -> stressIdx
+function loadOverrides(){ try{ OV = JSON.parse(localStorage.getItem(LS.overrides)||'{}'); }catch{ OV = {}; } }
+function saveOverrides(){ localStorage.setItem(LS.overrides, JSON.stringify(OV)); }
+
+/* ---------- Text processing ---------- */
+function splitWords(line){
+  return CLEAN(line).split(" ").filter(Boolean);
+}
+function syllables(word){
+  let c=0; for (const ch of word.toLowerCase()) if (VSET.has(ch)) c++; return c||0;
+}
+function hasAcute(s){ return /[\u0301\u0300\u0341]/u.test(s); } // combining acute/grave
+function stripCombining(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').normalize('NFC'); }
+
+/* Stress detection priority:
+   1) explicit apostrophe after vowel (звони'т)
+   2) combining acute on vowel (зво́нит) → index among vowels
+   3) user overrides OV
+   4) dictionary LEX
+   5) fallback: penultimate vowel if >=2 syll
+*/
+function stressIndex(wordRaw){
+  const word = wordRaw.toLowerCase();
+  // apostrophe immediately after a vowel → that vowel is stressed
+  let vow = -1;
+  for (let i=0;i<word.length;i++){
+    const ch = word[i]; if (VSET.has(ch)) vow++;
+    if (word[i]==="'" && i>0 && VSET.has(word[i-1])){ return vow; }
+  }
+  // combining acute
+  const nfd = wordRaw.normalize('NFD');
+  vow = -1;
+  for (let i=0;i<nfd.length;i++){
+    const ch = nfd[i].toLowerCase();
+    if (VSET.has(ch)) vow++;
+    if (/[\u0301\u0341]/.test(nfd[i+1]||"")){ return vow; }
+  }
+  const base = stripCombining(word).replace(/'/g,'');
+  if (OV[base] !== undefined) return OV[base];
+  if (LEX.has(base) && LEX.get(base).st !== undefined) return LEX.get(base).st;
+  const syl = syllables(base);
+  if (syl<=1) return 0;
+  return syl-2; // предпоследняя
+}
+
+/* Grapheme→"phoneme-lite" normalization for rhymes
+   - remove soft/hard signs
+   - map ё→о (для рифм чаще ближе)
+   - щ→шч, ч→ч, й→й
+   - final devoicing: б→п, в→ф, г→к, д→т, ж→ш, з→с (на конце слова)
+*/
+function g2pLite(word){
+  let w = stripCombining(word.toLowerCase()).replace(/'/g,'');
+  w = w.replace(/ъ|ь/g,'').replace(/щ/g,'шч').replace(/ё/g,'о');
+  // final devoicing
+  w = w.replace(/([бвгджз])$/,'$1'.replace('б','п'));
+  w = w.replace(/б$/,'п').replace(/в$/,'ф').replace(/г$/,'к').replace(/д$/,'т').replace(/ж$/,'ш').replace(/з$/,'с');
+  return w;
+}
+function rhymeTail(wordRaw){
+  const word = stripCombining(wordRaw).toLowerCase().replace(/'/g,'');
+  const w = g2pLite(word);
+  // index of stressed vowel among vowels → char position
+  const sIdx = stressIndex(wordRaw);
+  let vowSeen=-1, pos=-1;
+  for (let i=0;i<w.length;i++){
+    if (VSET.has(w[i])){ vowSeen++; if (vowSeen===sIdx){ pos=i; break; } }
+  }
+  if (pos<0){ // fallback last vowel
+    for (let i=w.length-1;i>=0;i--) if (VSET.has(w[i])) { pos=i; break; }
+    if (pos<0) pos = Math.max(0, w.length-2);
+  }
+  return w.slice(pos);
+}
+function rhymeKey(word, mode='exact'){
+  const t = rhymeTail(word);
+  if (mode==='exact') return t;
+  if (mode==='assonance') return [...t].filter(ch=>VSET.has(ch)).join('');
+  if (mode==='consonance') return [...t].filter(ch=>!VSET.has(ch)).join('');
+  return t;
+}
+function rhymeScore(a,b){
+  let i=a.length-1, j=b.length-1, s=0;
+  while(i>=0 && j>=0 && a[i]===b[j]){ s++; i--; j--; }
+  return s;
+}
+
+/* Meter */
+const METERS = {
+  iamb:{name:"Ямб", pat:[0,1]},           // U S
+  trochee:{name:"Хорей", pat:[1,0]},      // S U
+  anapest:{name:"Анапест", pat:[0,0,1]},  // U U S
+  dactyl:{name:"Дактиль", pat:[1,0,0]},   // S U U
+  amphibrach:{name:"Амфибрахий", pat:[0,1,0]} // U S U
+};
+function lineStressMask(line){
+  const ws = splitWords(line); const mask=[];
+  for (const w of ws){
+    const syl = syllables(w);
+    const si = stressIndex(w);
+    for (let i=0;i<syl;i++) mask.push(i===si?1:0);
+  }
+  return mask;
+}
+function bestMeter(mask, tol=1, anacrusis=1){
+  let best = {key:null, name:"—", mism:Infinity, expect:[]};
+  const keys = Object.keys(METERS);
+  for (const k of keys){
+    const {pat,name} = METERS[k];
+    // try offsets (anacrusis up to N leading U)
+    for (let off=0; off<=anacrusis; off++){
+      let mism=0, expect=[];
+      for (let i=0;i<mask.length;i++){
+        const exp = pat[(i+off)%pat.length]; expect.push(exp);
+        if (mask[i]!==exp) mism++;
+      }
+      if (mism < best.mism){ best = {key:k, name, mism, expect}; }
+    }
+  }
+  if (best.mism<=tol) return best;
+  return best; // may be high mism
+}
+
+/* Internal multi-syllable rhymes (within line) — simple ngram match over rhyme keys */
+function innerRhymes(line, minLenPhon=3){
+  const ws = splitWords(line);
+  const tails = ws.map(w => ({w, key: rhymeKey(w,'exact')}));
+  const hits = [];
+  for (let i=0;i<tails.length;i++){
+    for (let j=i+1;j<tails.length;j++){
+      const a = tails[i].key, b = tails[j].key;
+      const sc = rhymeScore(a,b);
+      if (sc>=minLenPhon) hits.push({i,j,score:sc, w1:ws[i], w2:ws[j]});
+    }
+  }
+  return hits;
+}
+
+/* Rendering & Analysis */
+function analyze(){
+  const text = $poem.value.replace(/\r\n/g,"\n");
+  const lines = text.split("\n");
+  const stanzas = []; let cur = [];
+  for (const ln of lines){
+    if (ln.trim()===""){ stanzas.push(cur); cur=[]; }
+    else cur.push(ln);
+  }
+  if (cur.length) stanzas.push(cur);
+
+  $analysis.innerHTML = "";
+  const schemaByStanza = [];
+  const rhymeMode = S.rhymeMode, minTail = Number(S.minTail);
+  const tol = Number(S.tol), anac = Number(S.anacrusis);
+
+  // Pass 1: per-line
+  const lastWords = []; // for rhyme suggestions
+  const perLineData = [];
+  for (let si=0; si<stanzas.length; si++){
+    const stanza = stanzas[si];
+    for (let li=0; li<stanza.length; li++){
+      const idx = perLineData.length;
+      const raw = stanza[li];
+      const words = splitWords(raw);
+      const last = words[words.length-1] || "";
+      if (last) lastWords.push(last);
+      const mask = lineStressMask(raw);
+      const meter = S.showMeter ? bestMeter(mask, tol, anac) : {name:"—", mism:0, expect:[]};
+      const syl = mask.length;
+      // rhyme tail highlighting (last word)
+      const html = S.showRhyme && last
+        ? highlightRhymeTail(raw, last)
+        : escapeHtml(raw);
+
+      // inner rhymes
+      const inner = S.innerRhymes ? innerRhymes(raw, minTail) : [];
+
+      perLineData.push({stanzaIndex:si, lineInStanza:li, raw, words, last, mask, meter, syl, html, inner});
+    }
+  }
+
+  // Pass 2: stanza rhyme scheme
+  let lineCursor=0;
+  for (let si=0; si<stanzas.length; si++){
+    const stanza = stanzas[si];
+    const classes = []; const keysMap = new Map(); let labelCode=65; // A,B,C…
+    const scheme = [];
+    for (let li=0; li<stanza.length; li++){
+      const d = perLineData[lineCursor+li];
+      const end = d.last || "";
+      const key = end ? rhymeKey(end, rhymeMode) : "";
+      classes.push(key);
+      if (!keysMap.has(key)){ keysMap.set(key, String.fromCharCode(labelCode++)); }
+      scheme.push(keysMap.get(key));
+    }
+    schemaByStanza.push(scheme.join(""));
+    lineCursor += stanza.length;
+  }
+
+  // Render
+  let globalIndex = 0;
+  for (let si=0; si<stanzas.length; si++){
+    const hStanza = document.createElement('div');
+    if (S.autoStanza){
+      const sc = schemaByStanza[si] || "";
+      const st = document.createElement('div'); st.className='tag'; st.textContent = `Схема: ${sc||"—"}`;
+      const wrap = document.createElement('div'); wrap.className='tags'; wrap.appendChild(st);
+      $analysis.appendChild(wrap);
+    }
+    for (let li=0; li<stanzas[si].length; li++){
+      const d = perLineData[globalIndex++];
+      const line = document.createElement('div'); line.className='line';
+      const lnum = document.createElement('span'); lnum.className='lnum'; lnum.textContent = (li+1)+'.';
+      const text = document.createElement('span'); text.className='ltext'; text.innerHTML = decorateInnerRhymes(d);
+      line.appendChild(lnum); line.appendChild(text);
+
+      const tags = document.createElement('div'); tags.className='tags';
+      if (S.showSyll){
+        const t = document.createElement('span'); t.className='tag'; t.innerHTML = `${d.syl||0} слог(а/ов) — ${d.mask.length? d.mask.map(x=>x?"S":"U").join(""):"—"}`;
+        tags.appendChild(t);
+      }
+      if (S.showMeter){
+        const cls = d.meter.mism===0 ? 'ok' : (d.meter.mism<=tol ? 'warn' : 'bad');
+        const t = document.createElement('span'); t.className='tag';
+        const exp = d.mask.length? d.meter.expect.map(x=>x?'S':'U').join('') : '—';
+        t.innerHTML = `${d.meter.name}: <span class="${cls}">${d.meter.mism} несовп.</span> (ожид. ${exp})`;
+        tags.appendChild(t);
+      }
+      if (d.last){
+        const inDict = LEX.has(stripCombining(d.last.toLowerCase()).replace(/'/g,'')) ? 'ok':'warn';
+        const s = document.createElement('span'); s.className='tag';
+        s.innerHTML = `слово: <span class="${inDict}">${inDict==='ok'?'в словаре':'~'}</span>`;
+        tags.appendChild(s);
+      }
+
+      // stress edit chips
+      if (d.words.length){
+        const edit = document.createElement('span'); edit.className='tag clickable';
+        edit.textContent = "± ударение";
+        edit.title = "Задать ударение вручную для последнего слова";
+        edit.onclick = ()=> openStressEditor(d.last);
+        tags.appendChild(edit);
+      }
+
+      $analysis.appendChild(line);
+      $analysis.appendChild(tags);
+    }
+  }
+
+  // Meter info
+  $meterInfo.textContent = `Метр: авто. Толерантность: ${tol}. Анакруза: ${anac}U. Режим рифмы: ${S.rhymeMode}.`;
+
+  // Stanza info
+  const scTxt = schemaByStanza.map((s,i)=>`[${i+1}] ${s||'—'}`).join('  ');
+  $stanzaInfo.textContent = `Строфы: ${stanzas.length}. Схемы: ${scTxt || '—'}`;
+
+  // Rhyme suggestions (for last typed line)
+  const focusLast = lastSignificantLine(lines);
+  if (focusLast>=0){
+    const lastLine = lines[focusLast];
+    const lastWord = (splitWords(lastLine).slice(-1)[0]||"");
+    renderRhymeSuggestions(lastWord, rhymeMode, Number(S.minTail));
+  } else {
+    $rhymeChips.innerHTML = "";
+  }
+}
+function lastSignificantLine(lines){
+  for (let i=lines.length-1;i>=0;i--){
+    if (lines[i].trim()) return i;
+  }
+  return -1;
+}
+function highlightRhymeTail(fullLine, lastWord){
+  const base = stripCombining(lastWord).replace(/'/g,'').toLowerCase();
+  const low = fullLine.toLowerCase();
+  const pos = low.lastIndexOf(base);
+  if (pos<0) return escapeHtml(fullLine);
+  const before = fullLine.slice(0,pos);
+  const mid = fullLine.slice(pos, pos + lastWord.length);
+  const tailStart = findTailStartIndex(mid, lastWord);
+  const after = fullLine.slice(pos + lastWord.length);
+  return escapeHtml(before) + escapeHtml(mid.slice(0,tailStart)) + '<mark class="tail">' + escapeHtml(mid.slice(tailStart)) + '</mark>' + escapeHtml(after);
+}
+function findTailStartIndex(mid, original){
+  const w = stripCombining(original).replace(/'/g,'').toLowerCase();
+  const sIdx = stressIndex(original);
+  let vow=-1;
+  for (let i=0;i<w.length;i++){
+    if (VSET.has(w[i])){ vow++; if (vow===sIdx) return i; }
+  }
+  for (let i=w.length-1;i>=0;i--) if (VSET.has(w[i])) return i;
+  return Math.max(0, w.length-2);
+}
+function decorateInnerRhymes(d){
+  if (!S.innerRhymes || !d.inner.length) return d.html;
+  // naive: wrap both words with span.innerRhyme (first pair only to avoid overpaint)
+  let res = d.html;
+  const pairs = d.inner.slice(0,3); // limit to avoid clutter
+  for (const p of pairs){
+    res = wrapWordInstance(res, p.w1, 'innerRhyme');
+    res = wrapWordInstance(res, p.w2, 'innerRhyme');
+  }
+  return res;
+}
+function wrapWordInstance(html, word, cls){
+  // wrap first occurrence of raw word (case-insensitive) outside of tags
+  const re = new RegExp(`(>[^<]*)\\b(${escapeReg(word)})\\b`, 'i');
+  return html.replace(re, (m, a, b)=> a.replace(b, `<span class="${cls}">${escapeHtml(b)}</span>`));
+}
+
+/* Suggestions */
+function renderRhymeSuggestions(baseWord, mode, minTail){
+  $rhymeChips.innerHTML = "";
+  if (!baseWord){ return; }
+  const baseKey = rhymeKey(baseWord, mode);
+  const items = [];
+  for (const [w, meta] of LEX.entries()){
+    if (w===stripCombining(baseWord.toLowerCase()).replace(/'/g,'')) continue;
+    const k = rhymeKey(w, mode);
+    const sc = rhymeScore(baseKey, k);
+    if (sc>=minTail) items.push({w, sc, f:meta.f||1});
+  }
+  items.sort((a,b)=> b.sc - a.sc || b.f - a.f || a.w.localeCompare(b.w,'ru'));
+  for (const it of items.slice(0,60)){
+    const chip = document.createElement('button'); chip.className='chip';
+    chip.textContent = `${it.w} · ${'★'.repeat(Math.min(5, Math.ceil(it.sc/2)))}`;
+    chip.onclick = ()=> insertWord(it.w);
+    $rhymeChips.appendChild(chip);
+  }
+  if (!$rhymeChips.children.length){
+    const chip = document.createElement('span'); chip.className='chip'; chip.textContent='Нет подходящих (в этом демо-словаре)';
+    $rhymeChips.appendChild(chip);
+  }
+}
+function insertWord(w){
+  const t = $poem;
+  const val = t.value;
+  const i = t.selectionStart, j = t.selectionEnd;
+  const needsSpace = (i>0 && /\S/.test(val[i-1])) ? " " : "";
+  const before = val.slice(0,i), after = val.slice(j);
+  t.value = before + needsSpace + w + after;
+  t.focus(); t.selectionStart = t.selectionEnd = (before + needsSpace + w).length;
+  analyzeDebounced();
+}
+
+/* Stress editor (for one word) */
+function openStressEditor(word){
+  if (!word) return;
+  const base = stripCombining(word.toLowerCase()).replace(/'/g,'');
+  const syl = syllables(base);
+  if (syl===0) return;
+  const idx = stressIndex(word);
+  const newIdx = prompt(`Укажите номер ударного слога для «${base}» (1..${syl}). Текущее: ${idx+1}`, String(idx+1));
+  if (!newIdx) return;
+  const n = Math.max(1, Math.min(syl, parseInt(newIdx)||idx+1)) - 1;
+  OV[base] = n; saveOverrides(); analyzeDebounced();
+}
+
+/* Utils */
+function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+/* ---------- Editor, Save/Load, Export/Import ---------- */
+function saveDraft(){ localStorage.setItem(LS.draft, $poem.value); }
+function loadDraft(){ $poem.value = localStorage.getItem(LS.draft)||""; analyzeDebounced(); }
+function exportData(){
+  const data = {
+    poem:$poem.value, overrides:OV, settings:S, dict: $dictInfo.textContent
+  };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='sonetica_export.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function importData(file){
+  const fr = new FileReader();
+  fr.onload = e=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      if (data.poem!=null) $poem.value = data.poem;
+      if (data.overrides) { OV = data.overrides; saveOverrides(); }
+      if (data.settings) { Object.assign(S, data.settings); saveSettings(); applySettingsUI(); applyEditorFont(); }
+      analyzeDebounced();
+    }catch(err){ alert('Import error: '+err.message); }
+  };
+  fr.readAsText(file);
+}
+
+/* ---------- Settings UI ---------- */
+const dlg = $('#settings');
+function applySettingsUI(){
+  $('#optShowRhyme').checked = S.showRhyme;
+  $('#optShowMeter').checked = S.showMeter;
+  $('#optShowSyll').checked = S.showSyll;
+  $('#optAutoStanza').checked = S.autoStanza;
+  $('#optInnerRhymes').checked = S.innerRhymes;
+  $('#optEofication').checked = S.eofication;
+  $('#optRhymeMode').value = S.rhymeMode;
+  $('#optTol').value = String(S.tol);
+  $('#optMinTail').value = String(S.minTail);
+  $('#optAnacrusis').value = String(S.anacrusis);
+  $('#optFont').value = String(S.font);
+  $('#optAutosave').value = String(S.autosave);
+}
+function collectSettings(){
+  S.showRhyme = $('#optShowRhyme').checked;
+  S.showMeter = $('#optShowMeter').checked;
+  S.showSyll = $('#optShowSyll').checked;
+  S.autoStanza = $('#optAutoStanza').checked;
+  S.innerRhymes = $('#optInnerRhymes').checked;
+  S.eofication = $('#optEofication').checked;
+  S.rhymeMode = $('#optRhymeMode').value;
+  S.tol = Number($('#optTol').value);
+  S.minTail = Number($('#optMinTail').value);
+  S.anacrusis = Number($('#optAnacrusis').value);
+  S.font = Number($('#optFont').value);
+  S.autosave = $('#optAutosave').value==='off'? 'off': Number($('#optAutosave').value);
+  saveSettings();
+  applyEditorFont();
+  analyzeDebounced();
+}
+function applyEditorFont(){ $poem.style.fontSize = S.font+'px'; }
+
+/* ---------- Theme ---------- */
+function loadTheme(){ const t = localStorage.getItem(LS.theme)||'light'; if (t==='dark') enableDark(); }
+function toggleTheme(){ document.body.classList.contains('dark') ? enableLight() : enableDark(); }
+function enableDark(){
+  document.body.classList.add('dark');
+  document.documentElement.style.setProperty('--paper','#101110');
+  document.documentElement.style.setProperty('--paper2','#171917');
+  document.documentElement.style.setProperty('--ink','#EDEBE6');
+  document.documentElement.style.setProperty('--ink2','#C7C0B5');
+  document.documentElement.style.setProperty('--sep','#2a2c2a');
+  document.documentElement.style.setProperty('--gold','#8e824d');
+  document.documentElement.style.setProperty('--accent','#8aa0e6');
+  localStorage.setItem(LS.theme,'dark');
+}
+function enableLight(){
+  document.body.classList.remove('dark');
+  document.documentElement.style.cssText='';
+  localStorage.setItem(LS.theme,'light');
+}
+
+/* ---------- Autosave ---------- */
+let autosaveTimer=null;
+function resetAutosave(){
+  if (autosaveTimer) clearInterval(autosaveTimer);
+  if (S.autosave==='off') return;
+  autosaveTimer = setInterval(saveDraft, Number(S.autosave)*1000);
+}
+
+/* ---------- Debounce ---------- */
+let tDeb=null;
+function analyzeDebounced(){
+  if (tDeb) cancelAnimationFrame(tDeb);
+  tDeb = requestAnimationFrame(analyze);
+}
+
+/* ---------- Events ---------- */
+$('#btnSave').onclick = saveDraft;
+$('#btnLoad').onclick = loadDraft;
+$('#btnExport').onclick = exportData;
+$('#btnImport').onclick = ()=> $('#filePicker').click();
+$('#filePicker').onchange = e=> { const f=e.target.files[0]; if (f) importData(f); e.target.value=''; };
+
+$('#btnDict').onclick = ()=>{ seedMiniLex(); analyzeDebounced(); };
+$('#btnDict2').onclick = ()=>{ seedExtendedLex(); analyzeDebounced(); };
+
+$('#btnSettings').onclick = ()=>{ applySettingsUI(); dlg.showModal(); };
+$('#closeSettings').onclick = ()=>{ collectSettings(); dlg.close(); };
+
+$('#btnTheme').onclick = toggleTheme;
+
+$poem.addEventListener('input', analyzeDebounced);
+$poem.addEventListener('keydown', (e)=>{
+  if ((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); saveDraft(); }
+  if ((e.ctrlKey||e.metaKey) && e.key==='e'){ e.preventDefault(); exportData(); }
+});
+
+/* ---------- Boot ---------- */
+(function init(){
+  loadSettings();
+  loadOverrides();
+  seedMiniLex();
+  loadTheme();
+  resetAutosave();
+
+  // Hook settings inputs to live update
+  dlg.addEventListener('change', e=>{
+    if (e.target.closest('.modal-body')) collectSettings();
+  });
+
+  // Demo text
+  const demo = `Я шёпотом зову твою любовь,
+И времени не слышу бег суро́вый;
+Пускай над крышей кружит лёгкий мох,
+Я выберу покой — и стану новый.
+
+А ночь хранит печа́ль моих дорог,
+И снег хрустит, как стеклянОе слово;
+Под ключ мечта, под сердце — пароГ,
+Но рифма ждёт: огнЁм — живу — снова.`;
+  if (!localStorage.getItem(LS.draft)) $poem.value = demo;
+
+  analyzeDebounced();
+  responsiveLayout();
+})();
+
+</script>
+<script type="module" src="/src/main.ts"></script>
 </body>
 </html>
