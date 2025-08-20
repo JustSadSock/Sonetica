@@ -13,3 +13,4 @@ assets/fonts/*.woff2
 
 public/icons/*.png
 !public/icons/.keep
+public/favicon.ico

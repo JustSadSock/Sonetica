@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Sonetica — поэтический кабинет</title>
 <meta name="description" content="Sonetica — офлайн-инструмент для поэтов: рифмы, ритм, слоги, строфы. Полностью локально, без серверов." />
+<meta name="theme-color" content="#b79a4b" />
 <link rel="stylesheet" href="/assets/fonts/fonts.css" />
 <link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=STIX+Two+Text:ital,wght@0,400;0,700;1,400;1,700&display=swap&subset=cyrillic" />
 <style>
   :root{
@@ -247,7 +249,8 @@
 
 <input type="file" id="filePicker" accept=".json,.txt" hidden />
 
-<script>
+<script type="module">
+import { seedMiniLex, seedExtendedLex, loadOverrides, setOverride, lookupStress, hasWord, allWords, overrides } from './src/analysis/dict.ts';
 /* =========================
    SONETICA — SINGLE FILE
    ========================= */
@@ -297,47 +300,10 @@ function loadSettings(){
 }
 function saveSettings(){ localStorage.setItem(LS.settings, JSON.stringify(S)); }
 
-/* ---------- Demo Dictionaries (embedded) ----------
-   Format:
-   - LEX: array of entries: {w:word, st:stressIndexAmongVowels, f:freq, ph:phonemeTail}
-   For brevity, phoneme tail is computed on the fly here; extended set precomputes it.
-*/
+/* ---------- Text helpers ---------- */
 const VOWELS = "аеёиоуыэюя";
 const VSET = new Set([...VOWELS]);
 const CLEAN = s => s.toLowerCase().replace(/[^\p{Letter}\p{Mark}\-']/gu, " ").replace(/\s+/g," ").trim();
-
-const DEMO_LEX_MIN = [
-  "любовь","кровь","сон","дождь","окно","огонь","порог","дорога","берёза","мороз","весна","луна","земля","лес","река",
-  "вечер","смех","тень","судьба","звезда","поэт","муза","стих","радость","печаль","свобода","вода","слова","мост","простор","покой"
-];
-const DEMO_STRESS = { "любовь":0,"кровь":0,"сон":0,"дождь":0,"окно":1,"огонь":1,"порог":1,"дорога":1,"берёза":1,"мороз":1,"весна":1,"луна":1,"земля":1,"лес":0,"река":1,"вечер":0,"смех":0,"тень":0,"судьба":1,"звезда":1,"поэт":1,"муза":0,"стих":0,"радость":0,"печаль":0,"свобода":2,"вода":1,"слова":1,"мост":0,"простор":1,"покой":1 };
-
-let LEX = new Map(); // word -> {st, f}
-function seedMiniLex(){
-  LEX.clear();
-  for (const w of DEMO_LEX_MIN){
-    LEX.set(w, {st: DEMO_STRESS[w] ?? 0, f: 100});
-  }
-  $dictInfo.textContent = 'mini';
-}
-function seedExtendedLex(){
-  // Lightweight embedded extension (not huge)
-  const EXTRA = [
-    ["люблю",1],["кровавый",1],["огнём",1],["берега",2],["берег",0],["мостом",1],["простом",1],["порогом",1],
-    ["луной",1],["лунами",1],["реки",1],["окна",1],["окне",1],["век",0],["вечный",0],["зов",0],["молчание",1],
-    ["гроза",1],["трава",1],["земной",1],["высокий",1],["глубокий",1],["тихий",0],["гордый",0],["свет",0],["тень",0],
-    ["свободой",2],["слезой",1],["письмо",1],["перо",1],["строка",1],["рифма",0],["ритм",0],
-    ["ночь",0],["день",0],["раны",0],["раны́",1],["песни",0],["экран",1],["стекло",1],["огня",1],
-    ["судьбой",1],["звездой",1],["ветер",0],["камень",0],["вода",1],["виной",1],["дороги",1],["дорогой",2],
-  ];
-  for (const [w,st] of EXTRA){ LEX.set(w, {st, f: 80}); }
-  $dictInfo.textContent = 'extended';
-}
-
-/* ---------- Stress overrides (user) ---------- */
-let OV = {}; // word(lower) -> stressIdx
-function loadOverrides(){ try{ OV = JSON.parse(localStorage.getItem(LS.overrides)||'{}'); }catch{ OV = {}; } }
-function saveOverrides(){ localStorage.setItem(LS.overrides, JSON.stringify(OV)); }
 
 /* ---------- Text processing ---------- */
 function splitWords(line){
@@ -352,9 +318,8 @@ function stripCombining(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g
 /* Stress detection priority:
    1) explicit apostrophe after vowel (звони'т)
    2) combining acute on vowel (зво́нит) → index among vowels
-   3) user overrides OV
-   4) dictionary LEX
-   5) fallback: penultimate vowel if >=2 syll
+   3) overrides/dictionary
+   4) fallback: penultimate vowel if >=2 syll
 */
 function stressIndex(wordRaw){
   const word = wordRaw.toLowerCase();
@@ -373,11 +338,12 @@ function stressIndex(wordRaw){
     if (/[\u0301\u0341]/.test(nfd[i+1]||"")){ return vow; }
   }
   const base = stripCombining(word).replace(/'/g,'');
-  if (OV[base] !== undefined) return OV[base];
-  if (LEX.has(base) && LEX.get(base).st !== undefined) return LEX.get(base).st;
+  const dict = lookupStress(base);
+  if (dict !== undefined) return dict;
   const syl = syllables(base);
-  if (syl<=1) return 0;
-  return syl-2; // предпоследняя
+  if (syl>=2) return syl-1;
+  if (syl===1) return 0;
+  return -1;
 }
 
 /* Grapheme→"phoneme-lite" normalization for rhymes
@@ -563,7 +529,7 @@ function analyze(){
         tags.appendChild(t);
       }
       if (d.last){
-        const inDict = LEX.has(stripCombining(d.last.toLowerCase()).replace(/'/g,'')) ? 'ok':'warn';
+        const inDict = hasWord(stripCombining(d.last.toLowerCase()).replace(/'/g,'')) ? 'ok':'warn';
         const s = document.createElement('span'); s.className='tag';
         s.innerHTML = `слово: <span class="${inDict}">${inDict==='ok'?'в словаре':'~'}</span>`;
         tags.appendChild(s);
@@ -650,7 +616,7 @@ function renderRhymeSuggestions(baseWord, mode, minTail){
   if (!baseWord){ return; }
   const baseKey = rhymeKey(baseWord, mode);
   const items = [];
-  for (const [w, meta] of LEX.entries()){
+  for (const [w, meta] of allWords()){
     if (w===stripCombining(baseWord.toLowerCase()).replace(/'/g,'')) continue;
     const k = rhymeKey(w, mode);
     const sc = rhymeScore(baseKey, k);
@@ -689,7 +655,7 @@ function openStressEditor(word){
   const newIdx = prompt(`Укажите номер ударного слога для «${base}» (1..${syl}). Текущее: ${idx+1}`, String(idx+1));
   if (!newIdx) return;
   const n = Math.max(1, Math.min(syl, parseInt(newIdx)||idx+1)) - 1;
-  OV[base] = n; saveOverrides(); analyzeDebounced();
+  setOverride(base, n); analyzeDebounced();
 }
 
 /* Utils */
@@ -701,7 +667,7 @@ function saveDraft(){ localStorage.setItem(LS.draft, $poem.value); }
 function loadDraft(){ $poem.value = localStorage.getItem(LS.draft)||""; analyzeDebounced(); }
 function exportData(){
   const data = {
-    poem:$poem.value, overrides:OV, settings:S, dict: $dictInfo.textContent
+    poem:$poem.value, overrides:overrides(), settings:S, dict: $dictInfo.textContent
   };
   const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
@@ -714,7 +680,7 @@ function importData(file){
     try{
       const data = JSON.parse(e.target.result);
       if (data.poem!=null) $poem.value = data.poem;
-      if (data.overrides) { OV = data.overrides; saveOverrides(); }
+      if (data.overrides) { for (const [w, idx] of Object.entries(data.overrides)) setOverride(w, idx); }
       if (data.settings) { Object.assign(S, data.settings); saveSettings(); applySettingsUI(); applyEditorFont(); }
       analyzeDebounced();
     }catch(err){ alert('Import error: '+err.message); }
@@ -799,8 +765,8 @@ $('#btnExport').onclick = exportData;
 $('#btnImport').onclick = ()=> $('#filePicker').click();
 $('#filePicker').onchange = e=> { const f=e.target.files[0]; if (f) importData(f); e.target.value=''; };
 
-$('#btnDict').onclick = ()=>{ seedMiniLex(); analyzeDebounced(); };
-$('#btnDict2').onclick = ()=>{ seedExtendedLex(); analyzeDebounced(); };
+$('#btnDict').onclick = ()=>{ seedMiniLex(); $dictInfo.textContent='mini'; analyzeDebounced(); };
+$('#btnDict2').onclick = ()=>{ seedExtendedLex(); $dictInfo.textContent='extended'; analyzeDebounced(); };
 
 $('#btnSettings').onclick = ()=>{ applySettingsUI(); dlg.showModal(); };
 $('#closeSettings').onclick = ()=>{ collectSettings(); dlg.close(); };
@@ -818,6 +784,7 @@ $poem.addEventListener('keydown', (e)=>{
   loadSettings();
   loadOverrides();
   seedMiniLex();
+  $dictInfo.textContent='mini';
   loadTheme();
   resetAutosave();
 
