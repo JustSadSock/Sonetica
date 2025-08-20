@@ -14,7 +14,9 @@ function curl(url) {
   return execSync(`curl -L -s "${url}"`);
 }
 
-mkdirSync('assets/fonts', { recursive: true });
+// Download fonts into public assets so they can be served without being committed
+// The woff2 files are ignored via .gitignore
+mkdirSync('public/assets/fonts', { recursive: true });
 
 for (const font of fonts) {
   const url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font.family)}:ital,wght@0,400;0,700;1,400;1,700&display=swap&subset=cyrillic`;
@@ -29,7 +31,7 @@ for (const font of fonts) {
     if (!srcMatch || !weightMatch || !styleMatch) continue;
     const file = curl(srcMatch[1]);
     const filename = `${font.id}-${weightMatch[1]}-${styleMatch[1]}.woff2`;
-    writeFileSync(path.join('assets/fonts', filename), file);
+    writeFileSync(path.join('public/assets/fonts', filename), file);
     console.log('saved', filename);
   }
 }

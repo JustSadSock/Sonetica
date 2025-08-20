@@ -1,10 +1,21 @@
 const CACHE = 'sonetica-v3';
-const CORE = self.__CORE_ASSETS__ || ['./', './index.html'];
+// Placeholder replaced at build time with the list of core assets
+self.__CORE_ASSETS__ = self.__CORE_ASSETS__ || [];
+const CORE = self.__CORE_ASSETS__.length ? self.__CORE_ASSETS__ : ['./', './index.html'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
-    const c = await caches.open(CACHE);
-    await c.addAll(CORE);
+    const cache = await caches.open(CACHE);
+    const urls = CORE.filter(Boolean);
+    const results = await Promise.allSettled(
+      urls.map(u => fetch(u, { cache: 'no-cache' }))
+    );
+    const okUrls = results.map((r, i) => r.status === 'fulfilled' ? urls[i] : null).filter(Boolean);
+    try {
+      await cache.addAll(okUrls);
+    } catch (err) {
+      console.warn('SW cache.addAll failed', err);
+    }
     self.skipWaiting();
   })());
 });
