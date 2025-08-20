@@ -39,6 +39,7 @@ export function seedExtendedLex(): void {
     ["свободой",2],["слезой",1],["письмо",1],["перо",1],["строка",1],["рифма",0],["ритм",0],
     ["ночь",0],["день",0],["раны",0],["раны́",1],["песни",0],["экран",1],["стекло",1],["огня",1],
     ["судьбой",1],["звездой",1],["ветер",0],["камень",0],["вода",1],["виной",1],["дороги",1],["дорогой",2],
+    ["горит",1],["дрожит",1],
   ];
   for (const [w, st] of EXTRA) {
     LEX.set(w, { st, f: 80 });
@@ -75,6 +76,12 @@ export function lookupStress(word: string): number | undefined {
 
 export function hasWord(word: string): boolean {
   return LEX.has(word.toLowerCase());
+}
+
+export function mergeLex(entries: [string, number][]): void {
+  for (const [w, st] of entries) {
+    LEX.set(w.toLowerCase(), { st, f: 70 });
+  }
 }
 
 export function allWords(): IterableIterator<[string, LexEntry]> {

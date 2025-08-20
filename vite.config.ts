@@ -14,12 +14,17 @@ function swAssetsPlugin() {
           const rel = path.join(dir, f);
           const abs = path.join(dist, rel);
           if (statSync(abs).isDirectory()) walk(rel);
-          else if (rel !== 'sw.js') files.push('./' + rel.replace(/\\/g, '/'));
+          else if (rel !== 'sw.js' && !rel.endsWith('.map'))
+            files.push('./' + rel.replace(/\\/g, '/'));
         }
       };
       walk('.');
       const swPath = path.join(dist, 'sw.js');
-      const swSrc = readFileSync(swPath, 'utf8').replace('self.__CORE_ASSETS__', JSON.stringify(files));
+      const swSrc = readFileSync(swPath, 'utf8')
+        .replace(
+          'self.__CORE_ASSETS__ = self.__CORE_ASSETS__ || []',
+          `self.__CORE_ASSETS__ = ${JSON.stringify(files)}`
+        );
       writeFileSync(swPath, swSrc);
     }
   };

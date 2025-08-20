@@ -1,25 +1,33 @@
 # Sonetica
-Sonetica — офлайн-приложение для поэтов. Проект содержит минимальный каркас на TypeScript и Vite: подключение шрифтов, базовый редактор и service worker для офлайн-режима.
+Sonetica is an offline tool for poets built with TypeScript and Vite. It ships a basic editor, local dictionaries and a service worker for offline mode.
 
-## Скрипты
+## Scripts
 
-- `npm run fetch:fonts` — загрузить локальные WOFF2 шрифты.
-- `npm run dev` — режим разработки.
-- `npm run build` — сборка в папку `dist/`.
-- `npm run preview` — предпросмотр собранной версии.
-- `npm run lint` — проверка TypeScript.
-- `npm test` — запустить unit‑тесты.
+- `npm run fetch:fonts` – download local WOFF2 fonts.
+- `npm run dev` – start development server.
+- `npm run build` – build to `dist/`.
+- `npm run preview` – preview the production build.
+- `npm run lint` – TypeScript check.
+- `npm test` – run unit tests.
 
-## Шрифты
+## Fonts
 
-Локальные файлы шрифтов не хранятся в git. После клонирования выполните `npm run fetch:fonts`, чтобы скачать Noto Serif, PT Serif, IBM Plex Serif, Merriweather и STIX Two Text (весы 400/700, normal/italic). Лицензии находятся в `assets/fonts/LICENSES/`.
+Font binaries are not committed. After cloning run `npm run fetch:fonts` to download Noto Serif, PT Serif, IBM Plex Serif, Merriweather and STIX Two Text (weights 400/700 normal/italic). Files are placed in `public/assets/fonts` and ignored by git.
 
-## Офлайн
+## Offline
 
-Service worker (`public/sw.js`) кэширует основные ассеты, так что редактор доступен без сети.
+The service worker (`public/sw.js`) caches core assets so the editor works without a network. During build the `sw-assets` Vite plugin collects files from the build output and injects them into the service worker. If new static files are added simply rebuild – the cache list is generated automatically.
 
-После сборки (`npm run build`) статику из `dist/` можно раздавать любым сервером. Во время билда Vite‑плагин `sw-assets` собирает пути всех сгенерированных файлов и подставляет их в placeholder `__CORE_ASSETS__` внутри `public/sw.js`, поэтому список кэшируемых ассетов обновляется автоматически (см. `vite.config.ts`).
+The install step is resilient to missing files and skips 404 responses when populating the cache.
+
+## i18n
+
+Interface strings are stored as JSON dictionaries under `public/i18n`. The helper in `src/i18n` lazily fetches a language file and caches it in memory. Default language is English; call `loadLang('ru')` or `loadLang('uk')` to switch and use `t('key')` to access strings.
+
+## Dictionaries
+
+A tiny demo lexicon is bundled. Additional word lists can be merged at runtime via `mergeLex` (see `src/analysis/dict.ts`). This allows loading larger dictionaries from external URLs without committing them.
 
 ## Assets
 
-Бинарные файлы (иконки, шрифты) не хранятся в репозитории. Используйте локальные скрипты для их получения и убедитесь, что в коммитах нет бинарников.
+Binary files (icons, fonts) are not stored in git. Use local scripts to fetch them and ensure commits contain only text files.
