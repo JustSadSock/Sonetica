@@ -126,7 +126,6 @@
   <div class="toolbar">
     <button class="btn secondary" id="btnDict">Load demo dictionary</button>
     <button class="btn" id="btnSettings">Settings</button>
-    <button class="btn ghost" id="btnTheme">Theme</button>
   </div>
 </header>
 
@@ -168,6 +167,28 @@
   </div>
   <div class="modal-body">
     <div class="grid2">
+      <fieldset class="fieldset">
+        <legend>Interface</legend>
+        <div class="row">
+          <label>Language</label>
+          <select class="select" id="optLang">
+            <option value="en">English</option>
+            <option value="ru">Русский</option>
+            <option value="uk">Українська</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>Theme</label>
+          <select class="select" id="optTheme">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>Font</label>
+          <select class="select" id="optFontFamily"></select>
+        </div>
+      </fieldset>
       <fieldset class="fieldset">
         <legend>Features</legend>
         <div class="row"><label class="switch"><input type="checkbox" id="optShowRhyme" checked> Подсветка рифмы</label></div>
@@ -251,6 +272,9 @@
 
 <script type="module">
 import { seedMiniLex, seedExtendedLex, loadOverrides, setOverride, lookupStress, hasWord, allWords, overrides } from './src/analysis/dict.ts';
+import { fonts, applyFont, loadFontPreference } from './src/ui/fonts.ts';
+import { loadTheme, setTheme } from './src/ui/theme.ts';
+import { initLang, loadLang, getLang } from './src/i18n/index.ts';
 /* =========================
    SONETICA — SINGLE FILE
    ========================= */
@@ -259,8 +283,7 @@ import { seedMiniLex, seedExtendedLex, loadOverrides, setOverride, lookupStress,
 const LS = {
   draft: 'sonetica_draft_v1',
   overrides: 'sonetica_overrides_v1',
-  settings: 'sonetica_settings_v1',
-  theme: 'sonetica_theme'
+  settings: 'sonetica_settings_v1'
 };
 const SETTINGS_DEFAULT = {
   showRhyme:true, showMeter:true, showSyll:true, autoStanza:true, innerRhymes:false, eofication:true,
@@ -691,6 +714,9 @@ function importData(file){
 /* ---------- Settings UI ---------- */
 const dlg = $('#settings');
 function applySettingsUI(){
+  $('#optLang').value = getLang();
+  $('#optTheme').value = document.body.dataset.theme || 'light';
+  $('#optFontFamily').value = loadFontPreference();
   $('#optShowRhyme').checked = S.showRhyme;
   $('#optShowMeter').checked = S.showMeter;
   $('#optShowSyll').checked = S.showSyll;
@@ -720,28 +746,17 @@ function collectSettings(){
   saveSettings();
   applyEditorFont();
   analyzeDebounced();
+
+  const lang = $('#optLang').value;
+  loadLang(lang).catch(()=>{});
+  const theme = $('#optTheme').value;
+  setTheme(theme);
+  const ff = $('#optFontFamily').value;
+  applyFont(ff);
 }
 function applyEditorFont(){ $poem.style.fontSize = S.font+'px'; }
 
-/* ---------- Theme ---------- */
-function loadTheme(){ const t = localStorage.getItem(LS.theme)||'light'; if (t==='dark') enableDark(); }
-function toggleTheme(){ document.body.classList.contains('dark') ? enableLight() : enableDark(); }
-function enableDark(){
-  document.body.classList.add('dark');
-  document.documentElement.style.setProperty('--paper','#101110');
-  document.documentElement.style.setProperty('--paper2','#171917');
-  document.documentElement.style.setProperty('--ink','#EDEBE6');
-  document.documentElement.style.setProperty('--ink2','#C7C0B5');
-  document.documentElement.style.setProperty('--sep','#2a2c2a');
-  document.documentElement.style.setProperty('--gold','#8e824d');
-  document.documentElement.style.setProperty('--accent','#8aa0e6');
-  localStorage.setItem(LS.theme,'dark');
-}
-function enableLight(){
-  document.body.classList.remove('dark');
-  document.documentElement.style.cssText='';
-  localStorage.setItem(LS.theme,'light');
-}
+/* Theme handled by src/ui/theme.ts */
 
 /* ---------- Autosave ---------- */
 let autosaveTimer=null;
@@ -771,7 +786,6 @@ $('#btnDict2').onclick = ()=>{ seedExtendedLex(); $dictInfo.textContent='extende
 $('#btnSettings').onclick = ()=>{ applySettingsUI(); dlg.showModal(); };
 $('#closeSettings').onclick = ()=>{ collectSettings(); dlg.close(); };
 
-$('#btnTheme').onclick = toggleTheme;
 
 $poem.addEventListener('input', analyzeDebounced);
 $poem.addEventListener('keydown', (e)=>{
@@ -780,29 +794,23 @@ $poem.addEventListener('keydown', (e)=>{
 });
 
 /* ---------- Boot ---------- */
-(function init(){
+(async function init(){
+  await initLang();
+  loadTheme();
+  const fontSel = document.getElementById('optFontFamily');
+  fonts.forEach(f=>{ const o=document.createElement('option'); o.value=f; o.textContent=f; fontSel?.appendChild(o); });
   loadSettings();
   loadOverrides();
   seedMiniLex();
   $dictInfo.textContent='mini';
-  loadTheme();
   resetAutosave();
 
-  // Hook settings inputs to live update
-  dlg.addEventListener('change', e=>{
-    if (e.target.closest('.modal-body')) collectSettings();
-  });
+  dlg.addEventListener('change', e=>{ if (e.target.closest('.modal-body')) collectSettings(); });
 
-  // Demo text
-  const demo = `Я шёпотом зову твою любовь,
-И времени не слышу бег суро́вый;
-Пускай над крышей кружит лёгкий мох,
-Я выберу покой — и стану новый.
-
-А ночь хранит печа́ль моих дорог,
-И снег хрустит, как стеклянОе слово;
-Под ключ мечта, под сердце — пароГ,
-Но рифма ждёт: огнЁм — живу — снова.`;
+  const demo = `Ти́хий зво́н плывё́т из до́ма,
+Све́тлый па́мятный огнь гори́т.
+Над поля́ми ве́ет ко́мья,
+И душа́ моя́ дрожи́т.`;
   if (!localStorage.getItem(LS.draft)) $poem.value = demo;
 
   analyzeDebounced();

@@ -1,6 +1,26 @@
+import { stripCombining } from './text';
+
 export interface LexEntry { st: number; f?: number }
 
 const LEX = new Map<string, LexEntry>();
+const VOWELS = 'аеёиоуыэюя';
+
+function norm(w: string): string {
+  return stripCombining(w.toLowerCase());
+}
+
+function yoStress(w: string): number | undefined {
+  const idx = w.indexOf('ё');
+  if (idx === -1) return undefined;
+  let v = 0;
+  for (let i = 0; i < w.length; i++) {
+    if (VOWELS.includes(w[i])) {
+      if (i === idx) return v;
+      v++;
+    }
+  }
+  return undefined;
+}
 
 const POEM_WORDS: [string, number][] = [
   ['взошла',1],['заря',1],['и',-1],['тьма',0],['умчалась',1],['скользит',1],['лучом',1],['по',-1],
@@ -23,10 +43,11 @@ const DEMO_STRESS: Record<string, number> = {
 export function seedMiniLex(): void {
   LEX.clear();
   for (const [w, st] of POEM_WORDS) {
-    LEX.set(w, { st, f: 90 });
+    LEX.set(norm(w), { st, f: 90 });
   }
   for (const w of DEMO_LEX_MIN) {
-    LEX.set(w, { st: DEMO_STRESS[w] ?? 0, f: 100 });
+    const k = norm(w);
+    LEX.set(k, { st: DEMO_STRESS[w] ?? 0, f: 100 });
   }
 }
 
@@ -42,7 +63,7 @@ export function seedExtendedLex(): void {
     ["горит",1],["дрожит",1],
   ];
   for (const [w, st] of EXTRA) {
-    LEX.set(w, { st, f: 80 });
+    LEX.set(norm(w), { st, f: 80 });
   }
 }
 
@@ -63,24 +84,24 @@ function persistOverrides(): void {
 }
 
 export function setOverride(word: string, idx: number): void {
-  OV[word.toLowerCase()] = idx;
+  OV[norm(word)] = idx;
   persistOverrides();
 }
 
 export function overrides(): Record<string, number> { return OV; }
 
 export function lookupStress(word: string): number | undefined {
-  const w = word.toLowerCase();
-  return OV[w] ?? LEX.get(w)?.st;
+  const w = norm(word);
+  return OV[w] ?? LEX.get(w)?.st ?? yoStress(w);
 }
 
 export function hasWord(word: string): boolean {
-  return LEX.has(word.toLowerCase());
+  return LEX.has(norm(word));
 }
 
 export function mergeLex(entries: [string, number][]): void {
   for (const [w, st] of entries) {
-    LEX.set(w.toLowerCase(), { st, f: 70 });
+    LEX.set(norm(w), { st, f: 70 });
   }
 }
 

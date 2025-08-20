@@ -9,6 +9,7 @@ Sonetica is an offline tool for poets built with TypeScript and Vite. It ships a
 - `npm run preview` – preview the production build.
 - `npm run lint` – TypeScript check.
 - `npm test` – run unit tests.
+- `npm run gen:icons` – generate PNG favicons from `public/icons/icon.svg` (run automatically before build).
 
 ## Fonts
 
@@ -22,7 +23,9 @@ The install step is resilient to missing files and skips 404 responses when popu
 
 ## i18n
 
-Interface strings are stored as JSON dictionaries under `public/i18n`. The helper in `src/i18n` lazily fetches a language file and caches it in memory. Default language is English; call `loadLang('ru')` or `loadLang('uk')` to switch and use `t('key')` to access strings.
+Interface strings are stored as JSON dictionaries under `public/i18n`. The helper in `src/i18n` lazily fetches a language file and caches it in memory. Default language is English; call `loadLang('ru')` or `loadLang('uk')` to switch and use `t('key')` to access strings. The last chosen language is persisted in `localStorage`.
+
+The settings dialog also lets you pick a light or dark theme and select a serif font family. Choices are saved locally.
 
 ## Dictionaries
 
