@@ -1,3 +1,39 @@
 {
-  "hello": "Привет"
+  "settings": {
+    "title": "Настройки",
+    "theme": "Тема",
+    "language": "Язык",
+    "font": "Шрифт",
+    "dictUrl": "URL доп. словаря",
+    "loadDict": "Загрузить",
+    "loaded": "Словарь загружен",
+    "loadError": "Не удалось загрузить словарь"
+  },
+  "editor": {
+    "title": "Тетрадь",
+    "copy": "Копировать",
+    "placeholder": "Начните печатать здесь…"
+  },
+  "analysis": {
+    "title": "Разбор",
+    "scheme": "Схема",
+    "stanzas": "Строфы",
+    "word": "слово",
+    "inDict": "в словаре",
+    "notInDict": "~",
+    "stressOk": "± ударение",
+    "stressApprox": "≈ ударение",
+    "syllables": "слоги",
+    "meter": "метр",
+    "mismatches": "несовпадения"
+  },
+  "ui": {
+    "loading": "Загрузка…",
+    "error": "Ошибка",
+    "ok": "OK",
+    "cancel": "Отмена",
+    "updateReady": "Доступна новая версия",
+    "reload": "Обновить",
+    "tabs": { "editor": "Тетрадь", "analysis": "Разбор" }
+  }
 }

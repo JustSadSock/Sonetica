@@ -1,3 +1,39 @@
 {
-  "hello": "Hello"
+  "settings": {
+    "title": "Settings",
+    "theme": "Theme",
+    "language": "Language",
+    "font": "Font",
+    "dictUrl": "Extra dictionary URL",
+    "loadDict": "Load",
+    "loaded": "Dictionary loaded",
+    "loadError": "Failed to load dictionary"
+  },
+  "editor": {
+    "title": "Notebook",
+    "copy": "Copy",
+    "placeholder": "Start typing here…"
+  },
+  "analysis": {
+    "title": "Analysis",
+    "scheme": "Scheme",
+    "stanzas": "Stanzas",
+    "word": "word",
+    "inDict": "in dictionary",
+    "notInDict": "~",
+    "stressOk": "± stress",
+    "stressApprox": "≈ stress",
+    "syllables": "syllables",
+    "meter": "meter",
+    "mismatches": "mismatches"
+  },
+  "ui": {
+    "loading": "Loading…",
+    "error": "Error",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "updateReady": "Update available",
+    "reload": "Reload",
+    "tabs": { "editor": "Notebook", "analysis": "Analysis" }
+  }
 }

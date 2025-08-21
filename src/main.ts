@@ -1,4 +1,26 @@
 import { initFonts } from './ui/fonts';
+import { initLang, t } from './i18n';
+import { seedExtendedLex } from './analysis/dict';
+import { initSettingsPanel } from './ui/SettingsPanel';
+import { initEditor } from './ui/editor';
+import { initTabs } from './ui/layout';
+import { initAnalysis } from './ui/analysis';
+
+async function boot() {
+  await initLang();
+  document.documentElement.lang = (window as any).__bootLang ?? 'en';
+  await initFonts();
+  seedExtendedLex();
+  const settingsRoot = document.getElementById('settings-panel');
+  if (settingsRoot) initSettingsPanel(settingsRoot);
+  const editor = document.getElementById('editor') as HTMLTextAreaElement | null;
+  const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement | null;
+  if (editor) initEditor(editor, copyBtn || undefined);
+  const analysisRoot = document.getElementById('analysis-panel');
+  if (editor && analysisRoot) initAnalysis(analysisRoot, editor);
+  initTabs();
+  registerServiceWorker();
+}
 
 function registerServiceWorker(): void {
   if ('serviceWorker' in navigator) {
@@ -17,9 +39,9 @@ function registerServiceWorker(): void {
 
 function showUpdatePrompt(): void {
   const bar = document.createElement('div');
-  bar.textContent = 'Доступна новая версия';
+  bar.textContent = t('ui.updateReady');
   const btn = document.createElement('button');
-  btn.textContent = 'Обновить';
+  btn.textContent = t('ui.reload');
   btn.onclick = () => location.reload();
   Object.assign(bar.style, {
     position: 'fixed', bottom: '10px', left: '10px',
@@ -31,5 +53,4 @@ function showUpdatePrompt(): void {
   document.body.appendChild(bar);
 }
 
-initFonts();
-registerServiceWorker();
+boot();

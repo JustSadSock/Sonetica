@@ -17,7 +17,7 @@ export function loadTheme(): Theme {
 }
 
 export function enableDark(): void {
-  document.body.dataset.theme = 'dark';
+  document.documentElement.dataset.theme = 'dark';
   const r = document.documentElement.style;
   r.setProperty('--paper','#101110');
   r.setProperty('--paper2','#171917');
@@ -26,16 +26,28 @@ export function enableDark(): void {
   r.setProperty('--sep','#2a2c2a');
   r.setProperty('--gold','#8e824d');
   r.setProperty('--accent','#8aa0e6');
+  setThemeColor('#101110');
   try { localStorage.setItem(KEY,'dark'); } catch {}
 }
 
 export function enableLight(): void {
-  document.body.dataset.theme = 'light';
+  document.documentElement.dataset.theme = 'light';
   document.documentElement.style.cssText='';
+  setThemeColor('#b79a4b');
   try { localStorage.setItem(KEY,'light'); } catch {}
 }
 
+function setThemeColor(hex: string): void {
+  let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'theme-color');
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute('content', hex);
+}
+
 export function toggleTheme(): void {
-  const current = document.body.dataset.theme === 'dark' ? 'dark' : 'light';
+  const current = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
   setTheme(current === 'dark' ? 'light' : 'dark');
 }

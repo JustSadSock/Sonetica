@@ -1,3 +1,5 @@
+import { loadFamily } from '../fonts/loader';
+
 export const fonts = [
   'Noto Serif',
   'PT Serif',
@@ -6,15 +8,21 @@ export const fonts = [
   'STIX Two Text'
 ];
 
-export function initFonts(): void {
-  applyFont(loadFontPreference());
+export function initFonts(): Promise<void> {
+  return applyFont(loadFontPreference());
 }
 
-export function applyFont(label: string): void {
+export async function applyFont(label: string): Promise<void> {
+  // Загружаем гарнитуру (все основные варианты), объявленную в fonts.css
+  await loadFamily(label);
   document.documentElement.style.setProperty('--app-font', `'${label}', serif`);
-  localStorage.setItem('sonetica-font', label);
+  try { localStorage.setItem('sonetica-font', label); } catch {}
 }
 
 export function loadFontPreference(): string {
-  return localStorage.getItem('sonetica-font') || fonts[0]!;
+  try {
+    return localStorage.getItem('sonetica-font') || fonts[0]!;
+  } catch {
+    return fonts[0]!;
+  }
 }

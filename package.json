@@ -12,7 +12,8 @@
     "lint": "tsc --noEmit",
     "fetch:fonts": "node scripts/fetch-fonts.mjs",
     "gen:icons": "node scripts/gen-icons.mjs",
-    "test": "vitest run"
+    "i18n:check": "node scripts/check-i18n.mjs",
+    "test": "npm run i18n:check && vitest run"
   },
   "devDependencies": {
     "@tsconfig/node18": "^18.2.4",

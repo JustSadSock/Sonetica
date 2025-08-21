@@ -1,3 +1,39 @@
 {
-  "hello": "Привіт"
+  "settings": {
+    "title": "Налаштування",
+    "theme": "Тема",
+    "language": "Мова",
+    "font": "Шрифт",
+    "dictUrl": "URL дод. словника",
+    "loadDict": "Завантажити",
+    "loaded": "Словник завантажено",
+    "loadError": "Не вдалося завантажити словник"
+  },
+  "editor": {
+    "title": "Зошит",
+    "copy": "Копіювати",
+    "placeholder": "Почніть друкувати тут…"
+  },
+  "analysis": {
+    "title": "Аналіз",
+    "scheme": "Схема",
+    "stanzas": "Строфи",
+    "word": "слово",
+    "inDict": "у словнику",
+    "notInDict": "~",
+    "stressOk": "± наголос",
+    "stressApprox": "≈ наголос",
+    "syllables": "склади",
+    "meter": "розмір",
+    "mismatches": "невідповідності"
+  },
+  "ui": {
+    "loading": "Завантаження…",
+    "error": "Помилка",
+    "ok": "OK",
+    "cancel": "Скасувати",
+    "updateReady": "Доступна нова версія",
+    "reload": "Перезавантажити",
+    "tabs": { "editor": "Зошит", "analysis": "Аналіз" }
+  }
 }
